@@ -3,14 +3,17 @@ import SwiftData
 import Charts
 
 struct AnalysisView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \ExpenseItem.date, order: .reverse) private var items: [ExpenseItem]
     @Query(sort: \Category.name) private var allCategories: [Category]
-    @State private var selectedPeriod: TimePeriod = .month
-
-    enum TimePeriod: String, CaseIterable {
-        case week = "本周"
-        case month = "本月"
-        case year = "本年"
+    
+    @State private var viewModel = AnalysisViewModel()
+    @State private var selectedPeriod: PeriodType = .month
+    @State private var selectedDate: Date = Date()
+    
+    enum PeriodType: String, CaseIterable {
+        case month = "月"
+        case year = "年"
     }
 
     var body: some View {
@@ -20,244 +23,310 @@ struct AnalysisView: View {
                 .ignoresSafeArea()
             
             ScrollView {
-                VStack(spacing: 24) {
-                    // 顶部间距
-                    Spacer()
-                        .frame(height: 64)
+                VStack(spacing: 20) {
+                    // Header: 时间段选择和日期选择
+                    headerSection
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
                     
-                    // 统计卡片
-                    statisticsCards
+                    // 汇总卡片
+                    summaryCard
                         .padding(.horizontal, 16)
                     
-                    // 分类统计
-                    categoryStatistics
+                    // 每日趋势柱状图
+                    dailyTrendChart
                         .padding(.horizontal, 16)
                     
-                    // 趋势图表
-                    trendChart
+                    // 分类占比环形图
+                    categoryDonutChart
+                        .padding(.horizontal, 16)
+                    
+                    // 排名列表
+                    rankingList
                         .padding(.horizontal, 16)
                         .padding(.bottom, 100)
                 }
             }
         }
+        .onAppear {
+            updateData()
+        }
+        .onChange(of: selectedPeriod) {
+            updateData()
+        }
+        .onChange(of: selectedDate) {
+            updateData()
+        }
     }
     
-    // MARK: - 统计卡片
-    private var statisticsCards: some View {
+    // MARK: - Header Section
+    private var headerSection: some View {
         VStack(spacing: 16) {
             // 时间段选择器
             Picker("时间段", selection: $selectedPeriod) {
-                ForEach(TimePeriod.allCases, id: \.self) { period in
+                ForEach(PeriodType.allCases, id: \.self) { period in
                     Text(period.rawValue).tag(period)
                 }
             }
             .pickerStyle(.segmented)
             
-            // 总支出卡片
-            VStack(alignment: .leading, spacing: 8) {
+            // 日期选择器
+            if selectedPeriod == .month {
+                monthPicker
+            } else {
+                yearPicker
+            }
+        }
+    }
+    
+    private var monthPicker: some View {
+        HStack {
+            Button(action: {
+                changeMonth(-1)
+            }) {
+                Image(systemName: "chevron.left")
+                    .font(.headline)
+                    .foregroundColor(.blue)
+            }
+            
+            Spacer()
+            
+            Text(monthYearString)
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            Spacer()
+            
+            Button(action: {
+                changeMonth(1)
+            }) {
+                Image(systemName: "chevron.right")
+                    .font(.headline)
+                    .foregroundColor(canGoToNextMonth ? .blue : .gray)
+            }
+            .disabled(!canGoToNextMonth)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+    
+    private var yearPicker: some View {
+        HStack {
+            Button(action: {
+                changeYear(-1)
+            }) {
+                Image(systemName: "chevron.left")
+                    .font(.headline)
+                    .foregroundColor(.blue)
+            }
+            
+            Spacer()
+            
+            Text(yearString)
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            Spacer()
+            
+            Button(action: {
+                changeYear(1)
+            }) {
+                Image(systemName: "chevron.right")
+                    .font(.headline)
+                    .foregroundColor(canGoToNextYear ? .blue : .gray)
+            }
+            .disabled(!canGoToNextYear)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+    }
+    
+    private var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年M月"
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter.string(from: selectedDate)
+    }
+    
+    private var yearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年"
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter.string(from: selectedDate)
+    }
+    
+    // MARK: - 判断是否可以翻页
+    private var canGoToNextMonth: Bool {
+        let calendar = Calendar.current
+        let today = Date()
+        let currentMonth = calendar.component(.month, from: today)
+        let currentYear = calendar.component(.year, from: today)
+        
+        let selectedMonth = calendar.component(.month, from: selectedDate)
+        let selectedYear = calendar.component(.year, from: selectedDate)
+        
+        // 如果选择的月份是当前月份或之前的月份，可以前进
+        if selectedYear < currentYear {
+            return true
+        } else if selectedYear == currentYear {
+            return selectedMonth < currentMonth
+        } else {
+            return false
+        }
+    }
+    
+    private var canGoToNextYear: Bool {
+        let calendar = Calendar.current
+        let today = Date()
+        let currentYear = calendar.component(.year, from: today)
+        let selectedYear = calendar.component(.year, from: selectedDate)
+        
+        // 如果选择的年份是当前年份或之前的年份，可以前进
+        return selectedYear < currentYear
+    }
+    
+    private func changeMonth(_ delta: Int) {
+        let calendar = Calendar.current
+        guard let newDate = calendar.date(byAdding: .month, value: delta, to: selectedDate) else {
+            return
+        }
+        
+        // 检查新日期是否是未来月份
+        let today = Date()
+        if calendar.compare(newDate, to: today, toGranularity: .month) == .orderedDescending {
+            // 如果是未来月份，不允许切换
+            return
+        }
+        
+        selectedDate = newDate
+    }
+    
+    private func changeYear(_ delta: Int) {
+        let calendar = Calendar.current
+        guard let newDate = calendar.date(byAdding: .year, value: delta, to: selectedDate) else {
+            return
+        }
+        
+        // 检查新日期是否是未来年份
+        let today = Date()
+        if calendar.compare(newDate, to: today, toGranularity: .year) == .orderedDescending {
+            // 如果是未来年份，不允许切换
+            return
+        }
+        
+        selectedDate = newDate
+    }
+    
+    // MARK: - Summary Card
+    private var summaryCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // 总支出（大号显示）
+            VStack(alignment: .leading, spacing: 4) {
                 Text("总支出")
                     .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white.opacity(0.9))
-                
-                Text("¥\(totalExpense, specifier: "%.2f")")
-                    .font(.system(size: 36, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Text("共 \(filteredItems.count) 笔")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(24)
-            .background(
-                LinearGradient(
-                    colors: [Color.indigo, Color.purple],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 4)
-            
-            // 平均支出卡片
-            HStack(spacing: 16) {
-                statCard(
-                    title: "平均支出",
-                    value: String(format: "¥%.2f", averageExpense),
-                    icon: "chart.bar.fill",
-                    color: .blue
-                )
-                
-                statCard(
-                    title: "最大支出",
-                    value: String(format: "¥%.2f", maxExpense),
-                    icon: "arrow.up.circle.fill",
-                    color: .red
-                )
-            }
-        }
-    }
-    
-    private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .font(.title2)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Text(value)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-    }
-    
-    // MARK: - 分类统计
-    private var categoryStatistics: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("分类统计")
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-            
-            let categoryData = getCategoryStatistics()
-            
-            if categoryData.isEmpty {
-                Text("暂无数据")
-                    .font(.subheadline)
                     .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 40)
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(categoryData, id: \.category) { data in
-                        categoryRow(data: data, total: totalExpense)
-                    }
-                }
-                .padding(16)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-            }
-        }
-    }
-    
-    private func categoryRow(data: CategoryData, total: Double) -> some View {
-        // 从 SwiftData 中查找对应的分类
-        let category = allCategories.first { $0.name == data.category }
-        let iconName = category?.symbolName ?? "tag.fill"
-        let categoryColor = category?.color ?? Color.gray
-        let percentage = total > 0 ? (data.amount / total) * 100 : 0
-        
-        return VStack(spacing: 8) {
-            HStack {
-                // 分类图标
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(categoryColor)
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: iconName)
-                        .foregroundColor(.white)
-                        .font(.system(size: 16))
-                }
                 
-                Text(data.category)
-                    .font(.body)
-                    .fontWeight(.medium)
+                Text("¥\(viewModel.totalExpense, specifier: "%.2f")")
+                    .font(.system(size: 36, weight: .bold))
                     .foregroundColor(.primary)
+            }
+            
+            Divider()
+            
+            // 总收入和日均支出
+            HStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("总收入")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("¥\(viewModel.totalIncome, specifier: "%.2f")")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.green)
+                }
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("¥\(data.amount, specifier: "%.2f")")
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                    
-                    Text("\(percentage, specifier: "%.1f")%")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("日均支出")
+                .font(.caption)
+                .foregroundColor(.secondary)
             
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 8)
-                    
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(categoryColor)
-                        .frame(width: geometry.size.width * CGFloat(percentage / 100), height: 8)
+                    Text("¥\(viewModel.averageDailySpend, specifier: "%.2f")")
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
                 }
             }
-            .frame(height: 8)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 4)
     }
     
-    // MARK: - 趋势图表
-    private var trendChart: some View {
+    // MARK: - Daily Trend Chart
+    private var dailyTrendChart: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("支出趋势")
+            Text("每日趋势")
                 .font(.title3)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
             
-            let chartData = getChartData()
-            
-            if chartData.isEmpty {
-                Text("暂无数据")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 40)
+            if viewModel.dailyData.isEmpty {
+                emptyStateView(message: "暂无数据")
             } else {
-                VStack(spacing: 16) {
-                    Chart(chartData, id: \.date) { item in
-                        LineMark(
-                            x: .value("日期", item.date, unit: .day),
-                            y: .value("金额", item.amount)
+                Chart {
+                    // 柱状图
+                    ForEach(viewModel.dailyData, id: \.day) { data in
+                        BarMark(
+                            x: .value("日期", data.day),
+                            y: .value("金额", data.amount)
                         )
-                        .foregroundStyle(Color.indigo)
-                        .interpolationMethod(.catmullRom)
-                        
-                        AreaMark(
-                            x: .value("日期", item.date, unit: .day),
-                            y: .value("金额", item.amount)
-                        )
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.indigo.opacity(0.3), Color.indigo.opacity(0.0)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .interpolationMethod(.catmullRom)
+                        .foregroundStyle(data.amount >= viewModel.averageDailySpend ? Color.red : Color.blue)
+                        .cornerRadius(4)
                     }
-                    .frame(height: 200)
-                    .chartXAxis {
-                        AxisMarks(values: .stride(by: .day, count: selectedPeriod == .week ? 1 : selectedPeriod == .month ? 5 : 30)) { _ in
-                            AxisGridLine()
-                            AxisValueLabel(format: .dateTime.month().day())
+                    
+                    // 平均线
+                    RuleMark(y: .value("平均值", viewModel.averageDailySpend))
+                        .foregroundStyle(Color.gray)
+                        .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
+                        .annotation(position: .top, alignment: .trailing) {
+                            Text("平均: ¥\(viewModel.averageDailySpend, specifier: "%.2f")")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(4)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                        }
+                }
+                .frame(height: 200)
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: selectedPeriod == .month ? 5 : 1)) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let intValue = value.as(Int.self) {
+                                Text(selectedPeriod == .month ? "\(intValue)日" : "\(intValue)月")
+                                    .font(.caption)
+                            }
                         }
                     }
-                    .chartYAxis {
-                        AxisMarks { value in
-                            AxisGridLine()
-                            AxisValueLabel {
-                                if let doubleValue = value.as(Double.self) {
-                                    Text("¥\(Int(doubleValue))")
-                                }
+                }
+                .chartYAxis {
+                    AxisMarks { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let doubleValue = value.as(Double.self) {
+                                Text("¥\(Int(doubleValue))")
+                                    .font(.caption)
                             }
                         }
                     }
@@ -270,94 +339,175 @@ struct AnalysisView: View {
         }
     }
     
-    // MARK: - 计算属性
-    private var filteredItems: [ExpenseItem] {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        switch selectedPeriod {
-        case .week:
-            let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
-            return items.filter { $0.date >= weekAgo }
-        case .month:
-            return items.filter { calendar.isDate($0.date, equalTo: now, toGranularity: .month) }
-        case .year:
-            return items.filter { calendar.isDate($0.date, equalTo: now, toGranularity: .year) }
-        }
-    }
-    
-    private var totalExpense: Double {
-        filteredItems.reduce(0) { $0 + $1.amount }
-    }
-    
-    private var averageExpense: Double {
-        let count = filteredItems.count
-        return count > 0 ? totalExpense / Double(count) : 0
-    }
-    
-    private var maxExpense: Double {
-        filteredItems.map { $0.amount }.max() ?? 0
-    }
-    
-    // MARK: - 数据结构
-    struct CategoryData {
-        let category: String
-        let amount: Double
-    }
-    
-    struct ChartDataPoint {
-        let date: Date
-        let amount: Double
-    }
-    
-    // MARK: - 辅助方法
-    private func getCategoryStatistics() -> [CategoryData] {
-        let grouped = Dictionary(grouping: filteredItems) { $0.category }
-        return grouped.map { category, items in
-            CategoryData(
-                category: category,
-                amount: items.reduce(0) { $0 + $1.amount }
-            )
-        }
-        .sorted { $0.amount > $1.amount }
-    }
-    
-    private func getChartData() -> [ChartDataPoint] {
-        let calendar = Calendar.current
-        let now = Date()
-        var startDate: Date
-        
-        switch selectedPeriod {
-        case .week:
-            startDate = calendar.date(byAdding: .day, value: -7, to: now) ?? now
-        case .month:
-            startDate = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
-        case .year:
-            startDate = calendar.date(from: calendar.dateComponents([.year], from: now)) ?? now
-        }
-        
-        let dateRange = calendar.dateInterval(of: selectedPeriod == .week ? .day : selectedPeriod == .month ? .day : .month, for: startDate) ?? DateInterval(start: startDate, end: now)
-        
-        var data: [ChartDataPoint] = []
-        var currentDate = dateRange.start
-        
-        while currentDate <= dateRange.end {
-            let dayItems = filteredItems.filter { calendar.isDate($0.date, inSameDayAs: currentDate) }
-            let dayTotal = dayItems.reduce(0) { $0 + $1.amount }
-            data.append(ChartDataPoint(date: currentDate, amount: dayTotal))
+    // MARK: - Category Donut Chart
+    private var categoryDonutChart: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("分类占比")
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
             
-            if let nextDate = calendar.date(byAdding: selectedPeriod == .week ? .day : selectedPeriod == .month ? .day : .month, value: 1, to: currentDate) {
-                currentDate = nextDate
+            if viewModel.categoryData.isEmpty {
+                emptyStateView(message: "暂无数据")
             } else {
-                break
+                HStack(spacing: 24) {
+                    // 环形图
+                    Chart {
+                        ForEach(viewModel.categoryData, id: \.category.id) { data in
+                            SectorMark(
+                                angle: .value("金额", data.amount),
+                                innerRadius: .ratio(0.6),
+                                angularInset: 2
+                            )
+                            .foregroundStyle(data.category.color)
+                            .annotation(position: .overlay) {
+                                if data.percentage > 5 {
+                                    Text("\(Int(data.percentage))%")
+                                        .font(.caption2)
+                                        .foregroundColor(.white)
+                                        .fontWeight(.bold)
+                                }
+                            }
+                        }
+                    }
+                    .frame(width: 200, height: 200)
+                    
+                    // 图例
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(viewModel.categoryData.prefix(5), id: \.category.id) { data in
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(data.category.color)
+                                    .frame(width: 12, height: 12)
+                                
+                                Text(data.category.name)
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Text("\(Int(data.percentage))%")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+                .padding(16)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
             }
         }
-        
-        return data
+    }
+    
+    // MARK: - Ranking List
+    private var rankingList: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("分类排名")
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            if viewModel.categoryData.isEmpty {
+                emptyStateView(message: "暂无数据")
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(viewModel.categoryData.enumerated()), id: \.element.category.id) { index, data in
+                        rankingRow(data: data, rank: index + 1, total: viewModel.totalExpense)
+                        
+                        if index < viewModel.categoryData.count - 1 {
+                            Divider()
+                                .padding(.leading, 60)
+                        }
+                    }
+                }
+                .padding(16)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            }
+        }
+    }
+    
+    private func rankingRow(data: AnalysisViewModel.CategoryData, rank: Int, total: Double) -> some View {
+        Button(action: {
+            // TODO: 导航到该分类的交易列表
+            print("点击分类: \(data.category.name)")
+        }) {
+            HStack(spacing: 12) {
+                // 排名
+                Text("\(rank)")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+                    .frame(width: 24)
+                
+                // 分类图标
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(data.category.color)
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: data.category.symbolName)
+                        .foregroundColor(.white)
+                        .font(.system(size: 18))
+                }
+                
+                // 分类名称和进度条
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(data.category.name)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 6)
+                            
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(data.category.color)
+                                .frame(width: geometry.size.width * CGFloat(data.percentage / 100), height: 6)
+                        }
+                    }
+                    .frame(height: 6)
+                }
+                
+                Spacer()
+                
+                // 金额
+                Text("¥\(data.amount, specifier: "%.2f")")
+                    .font(.body)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+            }
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Empty State
+    private func emptyStateView(message: String) -> some View {
+        Text(message)
+            .font(.subheadline)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 40)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+    }
+    
+    // MARK: - Update Data
+    private func updateData() {
+        viewModel.updateData(for: selectedDate, periodType: selectedPeriod, context: modelContext, allCategories: allCategories)
     }
 }
 
 #Preview {
     AnalysisView()
-        .modelContainer(for: [ExpenseItem.self], inMemory: true)
+        .modelContainer(for: [ExpenseItem.self, Category.self], inMemory: true)
 }

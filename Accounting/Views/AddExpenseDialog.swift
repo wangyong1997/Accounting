@@ -180,6 +180,9 @@ struct AddExpenseDialog: View {
         
         modelContext.insert(newExpense)
         
+        // 增加分类的使用次数
+        DataSeeder.incrementCategoryUsage(categoryName: selectedCategory, context: modelContext)
+        
         // 重置表单
         title = ""
         amount = ""

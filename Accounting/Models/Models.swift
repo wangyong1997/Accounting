@@ -31,14 +31,27 @@ final class Category: Identifiable {
     var hexColor: String
     var type: String // Store as String for SwiftData compatibility
     var createdAt: Date
+    var sortOrder: Int? // Default sort order (0 = highest priority) - Optional for migration compatibility
+    var usageCount: Int? // Number of times this category has been used - Optional for migration compatibility
     
-    init(id: UUID = UUID(), name: String, symbolName: String, hexColor: String, type: CategoryType, createdAt: Date = Date()) {
+    init(id: UUID = UUID(), name: String, symbolName: String, hexColor: String, type: CategoryType, sortOrder: Int = 999, usageCount: Int = 0, createdAt: Date = Date()) {
         self.id = id
         self.name = name
         self.symbolName = symbolName
         self.hexColor = hexColor
         self.type = type.rawValue
+        self.sortOrder = sortOrder
+        self.usageCount = usageCount
         self.createdAt = createdAt
+    }
+    
+    // Computed properties with default values for easier access
+    var effectiveSortOrder: Int {
+        sortOrder ?? 999
+    }
+    
+    var effectiveUsageCount: Int {
+        usageCount ?? 0
     }
     
     // Computed property for type

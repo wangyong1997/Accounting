@@ -1,9 +1,11 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import StoreKit
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.requestReview) private var requestReview
     @Query(sort: \Category.name) private var categories: [Category]
     @Query(sort: \Account.createdAt) private var accounts: [Account]
     @Query(sort: \ExpenseItem.date, order: .reverse) private var expenses: [ExpenseItem]
@@ -219,8 +221,9 @@ struct SettingsView: View {
     
     // MARK: - Rate App
     private func rateApp() {
-        // TODO: Open App Store rating page
-        print("⭐ [SettingsView] Rate App")
+        // 使用智能评价服务，如果符合条件则显示评价请求
+        ReviewService.shared.requestReviewIfEligible(requestReview: requestReview)
+        print("⭐ [SettingsView] 请求应用评价")
     }
     
     // MARK: - Import CSV

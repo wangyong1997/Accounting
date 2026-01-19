@@ -1,10 +1,12 @@
 import SwiftUI
 import SwiftData
 import Foundation
+import StoreKit
 
 struct QuickAddSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.requestReview) private var requestReview
     
     let selectedCategory: Category
     
@@ -104,6 +106,32 @@ struct QuickAddSheet: View {
                 if isCalculatorMode {
                     calculateExpression()
                 }
+            }
+            .onAppear {
+                // 如果是支出分类，自动选择有余额的账户
+                if selectedCategory.categoryType == .expense {
+                    selectDefaultAccount()
+                }
+            }
+        }
+    }
+    
+    // MARK: - 默认账户选择
+    /// 自动选择有余额的账户作为默认支付方式
+    private func selectDefaultAccount() {
+        // 如果已经选择了账户，不自动选择
+        guard selectedAccount == nil else { return }
+        
+        // 查找有余额的账户（余额 > 0）
+        // 按创建时间排序，选择第一个有余额的账户
+        if let accountWithBalance = accounts.first(where: { $0.balance > 0 }) {
+            selectedAccount = accountWithBalance
+            print("✅ [QuickAddSheet] 自动选择账户: \(accountWithBalance.name) (余额: ¥\(accountWithBalance.balance))")
+        } else {
+            // 如果所有账户都没有余额，选择第一个账户（即使余额为0）
+            if let firstAccount = accounts.first {
+                selectedAccount = firstAccount
+                print("ℹ️ [QuickAddSheet] 所有账户余额为0，选择第一个账户: \(firstAccount.name)")
             }
         }
     }
@@ -441,6 +469,9 @@ struct QuickAddSheet: View {
         
         modelContext.insert(expense)
         
+        // 增加分类的使用次数
+        DataSeeder.incrementCategoryUsage(categoryName: selectedCategory.name, context: modelContext)
+        
         // 如果选择了账户，更新账户余额（支出时减少余额）
         if let account = selectedAccount {
             // 根据分类类型判断是支出还是收入
@@ -459,6 +490,10 @@ struct QuickAddSheet: View {
         
         // 保存更改
         try? modelContext.save()
+        
+        // 记录关键操作并检查是否需要请求评价
+        ReviewService.shared.logKeyAction()
+        ReviewService.shared.requestReviewIfEligible(requestReview: requestReview)
         
         dismiss()
     }

@@ -192,6 +192,39 @@ struct AddCategorySheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    // 预览（放在最上面）
+                    HStack(spacing: 16) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(selectedColor)
+                                .frame(width: 48, height: 48)
+                            
+                            Image(systemName: selectedIconName)
+                                .foregroundColor(.white)
+                                .font(.system(size: 24))
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(name.isEmpty ? "分类名称" : name)
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            
+                            Text(selectedType == .expense ? "支出" : "收入")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                } header: {
+                    Text("预览")
+                }
+                
                 Section("分类信息") {
                     TextField("分类名称", text: $name)
                     
@@ -222,57 +255,28 @@ struct AddCategorySheet: View {
                             .clipShape(Circle())
                     }
                     
-                    // 常用图标快捷选择
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(QuickAccessIcons.commonIcons.prefix(20), id: \.self) { iconName in
-                                Button(action: {
-                                    selectedIconName = iconName
-                                }) {
-                                    Image(systemName: iconName)
-                                        .font(.title3)
-                                        .foregroundColor(selectedIconName == iconName ? .white : selectedColor)
-                                        .frame(width: 44, height: 44)
-                                        .background(selectedIconName == iconName ? selectedColor : selectedColor.opacity(0.2))
-                                        .clipShape(Circle())
-                                }
+                    // 常用图标快捷选择（换行显示）
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12)
+                    ], spacing: 12) {
+                        ForEach(QuickAccessIcons.commonIcons, id: \.self) { iconName in
+                            Button(action: {
+                                selectedIconName = iconName
+                            }) {
+                                Image(systemName: iconName)
+                                    .font(.title3)
+                                    .foregroundColor(selectedIconName == iconName ? .white : selectedColor)
+                                    .frame(width: 44, height: 44)
+                                    .background(selectedIconName == iconName ? selectedColor : selectedColor.opacity(0.2))
+                                    .clipShape(Circle())
                             }
                         }
-                        .padding(.horizontal, 4)
                     }
-                }
-                
-                Section {
-                    // 预览
-                    HStack(spacing: 16) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedColor)
-                                .frame(width: 48, height: 48)
-                            
-                            Image(systemName: selectedIconName)
-                                .foregroundColor(.white)
-                                .font(.system(size: 24))
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(name.isEmpty ? "分类名称" : name)
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                            
-                            Text(selectedType == .expense ? "支出" : "收入")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(16)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                } header: {
-                    Text("预览")
+                    .padding(.vertical, 8)
                 }
             }
             .navigationTitle("添加分类")
@@ -329,6 +333,39 @@ struct EditCategorySheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    // 预览（放在最上面）
+                    HStack(spacing: 16) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(selectedColor)
+                                .frame(width: 48, height: 48)
+                            
+                            Image(systemName: selectedIconName)
+                                .foregroundColor(.white)
+                                .font(.system(size: 24))
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(name.isEmpty ? "分类名称" : name)
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            
+                            Text(selectedType == .expense ? "支出" : "收入")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                } header: {
+                    Text("预览")
+                }
+                
                 Section("分类信息") {
                     TextField("分类名称", text: $name)
                     
@@ -359,57 +396,28 @@ struct EditCategorySheet: View {
                             .clipShape(Circle())
                     }
                     
-                    // 常用图标快捷选择
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(QuickAccessIcons.commonIcons.prefix(20), id: \.self) { iconName in
-                                Button(action: {
-                                    selectedIconName = iconName
-                                }) {
-                                    Image(systemName: iconName)
-                                        .font(.title3)
-                                        .foregroundColor(selectedIconName == iconName ? .white : selectedColor)
-                                        .frame(width: 44, height: 44)
-                                        .background(selectedIconName == iconName ? selectedColor : selectedColor.opacity(0.2))
-                                        .clipShape(Circle())
-                                }
+                    // 常用图标快捷选择（换行显示）
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12)
+                    ], spacing: 12) {
+                        ForEach(QuickAccessIcons.commonIcons, id: \.self) { iconName in
+                            Button(action: {
+                                selectedIconName = iconName
+                            }) {
+                                Image(systemName: iconName)
+                                    .font(.title3)
+                                    .foregroundColor(selectedIconName == iconName ? .white : selectedColor)
+                                    .frame(width: 44, height: 44)
+                                    .background(selectedIconName == iconName ? selectedColor : selectedColor.opacity(0.2))
+                                    .clipShape(Circle())
                             }
                         }
-                        .padding(.horizontal, 4)
                     }
-                }
-                
-                Section {
-                    // 预览
-                    HStack(spacing: 16) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedColor)
-                                .frame(width: 48, height: 48)
-                            
-                            Image(systemName: selectedIconName)
-                                .foregroundColor(.white)
-                                .font(.system(size: 24))
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(name.isEmpty ? "分类名称" : name)
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                            
-                            Text(selectedType == .expense ? "支出" : "收入")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(16)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                } header: {
-                    Text("预览")
+                    .padding(.vertical, 8)
                 }
             }
             .navigationTitle("编辑分类")

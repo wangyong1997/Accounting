@@ -35,6 +35,10 @@ struct AccountService {
                 accountName: account.name
             )
             context.insert(expense)
+            
+            // 增加分类的使用次数
+            DataSeeder.incrementCategoryUsage(categoryName: adjustmentCategory.name, context: context)
+            
             print("📝 [AccountService] 创建支出记录: -¥\(String(format: "%.2f", abs(difference)))")
         } else {
             // 正差异：资金增加，创建收入记录
@@ -47,6 +51,10 @@ struct AccountService {
                 accountName: account.name
             )
             context.insert(expense)
+            
+            // 增加分类的使用次数
+            DataSeeder.incrementCategoryUsage(categoryName: adjustmentCategory.name, context: context)
+            
             print("📝 [AccountService] 创建收入记录: +¥\(String(format: "%.2f", difference))")
         }
         

@@ -5,11 +5,27 @@ struct CategorySelectionSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    @Query(sort: \Category.name) private var allCategories: [Category]
+    @Query private var allCategories: [Category]
     @Binding var selectedCategory: Category?
     var onCategorySelected: (Category) -> Void
     
     @State private var selectedType: CategoryType = .expense
+    
+    // 智能排序：先按使用次数（降序），再按默认排序顺序（升序）
+    private var sortedCategories: [Category] {
+        allCategories
+            .filter { $0.categoryType == selectedType }
+            .sorted { first, second in
+                // 首先按使用次数排序（使用次数高的在前）
+                let firstCount = first.effectiveUsageCount
+                let secondCount = second.effectiveUsageCount
+                if firstCount != secondCount {
+                    return firstCount > secondCount
+                }
+                // 如果使用次数相同，按默认排序顺序排序（sortOrder小的在前）
+                return first.effectiveSortOrder < second.effectiveSortOrder
+            }
+    }
     
     var body: some View {
         NavigationView {
@@ -34,10 +50,8 @@ struct CategorySelectionSheet: View {
                         .pickerStyle(.segmented)
                         .padding(.horizontal, 20)
                         
-                        // 根据选择的类型显示分类
-                        let filteredCategories = allCategories.filter { $0.categoryType == selectedType }
-                        
-                        if filteredCategories.isEmpty {
+                        // 使用智能排序的分类列表
+                        if sortedCategories.isEmpty {
                             VStack(spacing: 16) {
                                 Image(systemName: "tray.fill")
                                     .font(.system(size: 48))
@@ -60,7 +74,7 @@ struct CategorySelectionSheet: View {
                                 GridItem(.flexible(), spacing: 12),
                                 GridItem(.flexible(), spacing: 12)
                             ], spacing: 16) {
-                                ForEach(filteredCategories) { category in
+                                ForEach(sortedCategories) { category in
                                     categoryButton(category: category)
                                 }
                             }

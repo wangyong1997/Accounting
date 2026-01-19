@@ -22,13 +22,10 @@ struct AssetsView: View {
                 
                 ScrollView {
                     VStack(spacing: 24) {
-                        // 顶部间距
-                        Spacer()
-                            .frame(height: 64)
-                        
                         // 头部统计卡片
                         headerCard
                             .padding(.horizontal, 16)
+                            .padding(.top, 16)
                         
                         // 操作提示
                         operationHint

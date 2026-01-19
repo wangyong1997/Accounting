@@ -184,6 +184,10 @@ struct CSVImporter {
                 }
                 
                 context.insert(expense)
+                
+                // 增加分类的使用次数
+                DataSeeder.incrementCategoryUsage(categoryName: category.name, context: context)
+                
                 successCount += 1
                 
             } catch {

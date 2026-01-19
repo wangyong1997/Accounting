@@ -9,6 +9,10 @@ struct AccountingApp: App {
         
         WindowGroup {
             ContentView()
+                .onAppear {
+                    // 记录应用启动
+                    ReviewService.shared.logAppLaunch()
+                }
         }
         .modelContainer(container)
     }
@@ -31,7 +35,7 @@ struct AccountingApp: App {
                 configurations: [modelConfiguration]
             )
             
-            // Seed default categories on first launch
+            // Seed default categories and migrate existing data
             // Note: This will only run once per device, not per iCloud account
             // CloudKit will sync the seeded data to other devices
             let context = ModelContext(container)
@@ -39,7 +43,20 @@ struct AccountingApp: App {
             
             return container
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            // 提供更详细的错误信息
+            let errorMessage = """
+            Could not create ModelContainer: \(error)
+            
+            This error usually occurs when the database schema has changed.
+            Possible solutions:
+            1. Delete the app and reinstall (this will lose all data)
+            2. Check if CloudKit is properly configured
+            3. Verify the model schema matches the database
+            
+            Error details: \(error.localizedDescription)
+            """
+            print("❌ [AccountingApp] \(errorMessage)")
+            fatalError(errorMessage)
         }
     }
 }
