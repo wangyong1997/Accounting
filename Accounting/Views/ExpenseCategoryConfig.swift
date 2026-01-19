@@ -27,12 +27,13 @@ func formatDate(_ date: Date) -> String {
     let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
     
     if calendar.isDateInToday(date) {
-        return "Today"
+        return "今天"
     } else if calendar.isDateInYesterday(date) {
-        return "Yesterday"
+        return "昨天"
     } else {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMMM d"
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日 EEEE"
         return formatter.string(from: date)
     }
 }

@@ -9,6 +9,8 @@ struct CategorySelectionSheet: View {
     @Binding var selectedCategory: Category?
     var onCategorySelected: (Category) -> Void
     
+    @State private var selectedType: CategoryType = .expense
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -24,20 +26,28 @@ struct CategorySelectionSheet: View {
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                         
-                        // 只显示支出分类
-                        let expenseCategories = allCategories.filter { $0.categoryType == .expense }
+                        // 收入/支出切换器
+                        Picker("类型", selection: $selectedType) {
+                            Text("支出").tag(CategoryType.expense)
+                            Text("收入").tag(CategoryType.income)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 20)
                         
-                        if expenseCategories.isEmpty {
+                        // 根据选择的类型显示分类
+                        let filteredCategories = allCategories.filter { $0.categoryType == selectedType }
+                        
+                        if filteredCategories.isEmpty {
                             VStack(spacing: 16) {
                                 Image(systemName: "tray.fill")
                                     .font(.system(size: 48))
                                     .foregroundColor(.gray.opacity(0.5))
                                 
-                                Text("暂无分类")
+                                Text("暂无\(selectedType == .expense ? "支出" : "收入")分类")
                                     .font(.headline)
                                     .foregroundColor(.secondary)
                                 
-                                Text("请先添加分类")
+                                Text("请先在设置中添加分类")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
@@ -50,7 +60,7 @@ struct CategorySelectionSheet: View {
                                 GridItem(.flexible(), spacing: 12),
                                 GridItem(.flexible(), spacing: 12)
                             ], spacing: 16) {
-                                ForEach(expenseCategories) { category in
+                                ForEach(filteredCategories) { category in
                                     categoryButton(category: category)
                                 }
                             }

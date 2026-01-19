@@ -150,7 +150,8 @@ struct CurrentExpensesView: View {
     
     private var currentMonthYear: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy年M月"
         return formatter.string(from: Date())
     }
     
