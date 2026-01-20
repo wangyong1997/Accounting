@@ -10,7 +10,7 @@ struct AnalysisView: View {
     @State private var viewModel = AnalysisViewModel()
     @State private var selectedPeriod: PeriodType = .month
     @State private var selectedDate: Date = Date()
-    
+
     enum PeriodType: String, CaseIterable {
         case month = "月"
         case year = "年"
@@ -250,7 +250,7 @@ struct AnalysisView: View {
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(.green)
-                }
+            }
                 
                 Spacer()
                 
@@ -358,7 +358,7 @@ struct AnalysisView: View {
                                 angle: .value("金额", data.amount),
                                 innerRadius: .ratio(0.6),
                                 angularInset: 2
-                            )
+                        )
                             .foregroundStyle(data.category.color)
                             .annotation(position: .overlay) {
                                 if data.percentage > 5 {

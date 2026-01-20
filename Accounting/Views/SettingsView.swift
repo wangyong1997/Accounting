@@ -11,7 +11,6 @@ struct SettingsView: View {
     @Query(sort: \ExpenseItem.date, order: .reverse) private var expenses: [ExpenseItem]
     
     // Settings
-    @AppStorage("useCloud") private var useCloud = false
     @AppStorage("useFaceID") private var useFaceID = false
     @AppStorage("userNickname") private var userNickname = ""
     @AppStorage("hasCleanedMockData") private var hasCleanedMockData = false
@@ -28,6 +27,7 @@ struct SettingsView: View {
     @State private var showFileImporter = false
     @State private var importResult: CSVImporter.ImportResult?
     @State private var showImportResultAlert = false
+    @State private var showAIConfig = false
     
     var body: some View {
         NavigationStack {
@@ -48,14 +48,10 @@ struct SettingsView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
-                }
+        }
                 
                 // Section 2: Data Management
                 Section {
-                    Toggle(isOn: $useCloud) {
-                        Label("iCloud 同步", systemImage: "cloud.fill")
-                    }
-                    
                     ShareLink(item: exportFile, preview: SharePreview("PixelLedger 数据备份", icon: "doc.text.fill")) {
                         Label("导出到 CSV", systemImage: "square.and.arrow.up")
                     }
@@ -105,8 +101,8 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("应用设置")
-                }
-                
+                    }
+                    
                 // Section 6: Data Management (Danger Zone)
                 Section {
                     Button(role: .destructive, action: {
@@ -136,12 +132,12 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("关于")
-                }
             }
+        }
             .navigationTitle("设置")
             .navigationBarTitleDisplayMode(.large)
             .listStyle(.insetGrouped)
-        }
+    }
         .sheet(isPresented: $showCategoryManagement) {
             CategoryManagementView()
         }
@@ -174,10 +170,10 @@ struct SettingsView: View {
             // 只在首次启动时清理一次模拟数据
             if !hasCleanedMockData {
                 hasCleanedMockData = true
+                }
             }
         }
-    }
-    
+        
     // MARK: - App Version
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -258,8 +254,8 @@ struct SettingsView: View {
             print("❌ [SettingsView] 文件选择失败: \(error.localizedDescription)")
             importResult = CSVImporter.ImportResult(success: 0, failed: 0)
             showImportResultAlert = true
+            }
         }
-    }
     
     // MARK: - Reset All Data
     private func resetAllData() {
@@ -316,10 +312,10 @@ struct AppIconView: View {
                 Text("应用图标")
                 } footer: {
                 Text("此功能正在开发中")
-            }
+                }
         }
         .navigationTitle("应用图标")
-        .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
     }
 }
 

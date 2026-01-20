@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import CloudKit
 
 @main
 struct AccountingApp: App {
@@ -17,16 +16,13 @@ struct AccountingApp: App {
         .modelContainer(container)
     }
     
-    private func createModelContainer() -> ModelContainer {
-        let schema = Schema([ExpenseItem.self, Category.self, Account.self])
+           private func createModelContainer() -> ModelContainer {
+               let schema = Schema([ExpenseItem.self, Category.self, Account.self])
         
-        // Configure for CloudKit sync
-        // The container identifier is specified in the entitlements file
-        // Set cloudKitDatabase to .automatic to enable iCloud sync
+        // 本地存储（已关闭 iCloud/CloudKit，同步）
         let modelConfiguration = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: false,
-            cloudKitDatabase: .automatic
+            isStoredInMemoryOnly: false
         )
         
         do {
@@ -35,9 +31,7 @@ struct AccountingApp: App {
                 configurations: [modelConfiguration]
             )
             
-            // Seed default categories and migrate existing data
-            // Note: This will only run once per device, not per iCloud account
-            // CloudKit will sync the seeded data to other devices
+            // Seed default categories and migrate existing data（仅本机）
             let context = ModelContext(container)
             DataSeeder.ensureDefaults(context: context)
             
@@ -47,11 +41,10 @@ struct AccountingApp: App {
             let errorMessage = """
             Could not create ModelContainer: \(error)
             
-            This error usually occurs when the database schema has changed.
+            This error usually occurs when the local database schema has changed.
             Possible solutions:
-            1. Delete the app and reinstall (this will lose all data)
-            2. Check if CloudKit is properly configured
-            3. Verify the model schema matches the database
+            1. Delete the app and reinstall (这会清空本地数据)
+            2. 确认 SwiftData 模型与本地存储 schema 一致
             
             Error details: \(error.localizedDescription)
             """

@@ -75,7 +75,7 @@ struct TimelineView: View {
                             .foregroundColor(percentageChange >= 0 ? .green : .red)
                         
                         Text("\(percentageChange >= 0 ? "+" : "")\(String(format: "%.1f", percentageChange))%")
-                            .font(.subheadline)
+                .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(percentageChange >= 0 ? .green : .red)
                     }
@@ -87,12 +87,12 @@ struct TimelineView: View {
                 Text("本月结余")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
+            
                 Text("¥\(netBalance, specifier: "%.2f")")
-                    .font(.system(size: 36, weight: .bold))
+                .font(.system(size: 36, weight: .bold))
                     .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
             }
             .padding(.vertical, 8)
             
@@ -130,7 +130,7 @@ struct TimelineView: View {
                         Image(systemName: "circle.fill")
                             .font(.title3)
                             .foregroundColor(.red)
-                        
+            
                         Text("支出")
                             .font(.subheadline)
                             .fontWeight(.medium)
@@ -155,7 +155,7 @@ struct TimelineView: View {
             if totalIncome > 0 {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("收支比例")
-                        .font(.subheadline)
+                .font(.subheadline)
                         .foregroundColor(.secondary)
                     
                     HStack(spacing: 12) {

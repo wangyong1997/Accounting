@@ -37,6 +37,10 @@ struct ContentView: View {
                 }
             })
             .ignoresSafeArea(.keyboard, edges: .bottom)
+            
+            // 全局悬浮语音入口（跨页面可见）
+            FloatingVoiceAssistant()
+                .zIndex(1000)
         }
         .sheet(isPresented: $showCategorySheet) {
             CategorySelectionSheet(

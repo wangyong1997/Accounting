@@ -264,18 +264,18 @@ struct AddCategorySheet: View {
                         GridItem(.flexible(), spacing: 12)
                     ], spacing: 12) {
                         ForEach(QuickAccessIcons.commonIcons, id: \.self) { iconName in
-                            Button(action: {
-                                selectedIconName = iconName
-                            }) {
-                                Image(systemName: iconName)
-                                    .font(.title3)
-                                    .foregroundColor(selectedIconName == iconName ? .white : selectedColor)
-                                    .frame(width: 44, height: 44)
-                                    .background(selectedIconName == iconName ? selectedColor : selectedColor.opacity(0.2))
-                                    .clipShape(Circle())
+                                Button(action: {
+                                    selectedIconName = iconName
+                                }) {
+                                    Image(systemName: iconName)
+                                        .font(.title3)
+                                        .foregroundColor(selectedIconName == iconName ? .white : selectedColor)
+                                        .frame(width: 44, height: 44)
+                                        .background(selectedIconName == iconName ? selectedColor : selectedColor.opacity(0.2))
+                                        .clipShape(Circle())
+                                }
                             }
                         }
-                    }
                     .padding(.vertical, 8)
                 }
             }
@@ -405,18 +405,18 @@ struct EditCategorySheet: View {
                         GridItem(.flexible(), spacing: 12)
                     ], spacing: 12) {
                         ForEach(QuickAccessIcons.commonIcons, id: \.self) { iconName in
-                            Button(action: {
-                                selectedIconName = iconName
-                            }) {
-                                Image(systemName: iconName)
-                                    .font(.title3)
-                                    .foregroundColor(selectedIconName == iconName ? .white : selectedColor)
-                                    .frame(width: 44, height: 44)
-                                    .background(selectedIconName == iconName ? selectedColor : selectedColor.opacity(0.2))
-                                    .clipShape(Circle())
+                                Button(action: {
+                                    selectedIconName = iconName
+                                }) {
+                                    Image(systemName: iconName)
+                                        .font(.title3)
+                                        .foregroundColor(selectedIconName == iconName ? .white : selectedColor)
+                                        .frame(width: 44, height: 44)
+                                        .background(selectedIconName == iconName ? selectedColor : selectedColor.opacity(0.2))
+                                        .clipShape(Circle())
+                                }
                             }
                         }
-                    }
                     .padding(.vertical, 8)
                 }
             }
